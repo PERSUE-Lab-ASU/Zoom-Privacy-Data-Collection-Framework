@@ -10,7 +10,11 @@ const fs = require('fs');
 
     // Specify the path to the text file
     const filePath = 'links.txt';
-    const outputFilePath = 'items.txt';
+    // Get the current date and time as a formatted string
+    const currentDate = new Date().toISOString().split('T')[0].replace(/[^0-9]/g, '-');
+    console.log(currentDate)
+    // Append the current date to the file name
+    const outputFilePath = `zoom_marketplace_${currentDate}.json`;
 
     // Read the links from the text file
     fs.readFile(filePath, 'utf8', async (err, data) => {
