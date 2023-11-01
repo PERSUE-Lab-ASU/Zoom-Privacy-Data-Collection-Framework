@@ -31,7 +31,13 @@ const fs = require('fs');
             const url = 'https://marketplace.zoom.us' + link;
 
             await page.goto(url);
-            await page.waitForSelector('.css-d0uhtl');
+
+            try {
+                await page.waitForSelector('.css-legcjp', { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
+            } catch (error) {
+                console.error(`Timeout waiting for selector '.css-legcjp' for URL: ${url}`);
+                continue; // Skip this URL and continue with the next one
+            }
 
             const items = await page.$$eval('.css-d0uhtl', (elements) => {
                 return elements.map((element) => element.textContent);
