@@ -52,18 +52,28 @@ const fs = require('fs');
             });
 
             const pageTitle = await page.title();
-            items.unshift(url);
-            items.unshift(pageTitle);
+
+            // Create a JSON object for the current link
+            const item = {
+                url: url,
+                pageTitle: pageTitle,
+                permissions: permissions,
+                scopes: scopes,
+                user_requirements: user_requirements
+            };
 
             // Increment the line number and include it in the log statement
             lineNumber++;
             console.log(`Line ${lineNumber} - Items:`, items);
+            console.log(user_requirements);
+            console.log(scopes);
+            console.log(`Line ${lineNumber} - Items:`, item);
 
-            itemsArray.push(items.join('\n')); // Use newline as a separator
+            itemsArray.push(item);
         }
 
-        // Write all items to the output text file
-        fs.writeFile(outputFilePath, itemsArray.join('\n\n'), (err) => {
+        // Write all items as a JSON array to the output JSON file
+        fs.writeFile(outputFilePath, JSON.stringify(itemsArray, null, 4), (err) => {
             if (err) {
                 console.error('Error writing the output file:', err);
             } else {
