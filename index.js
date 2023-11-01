@@ -39,7 +39,15 @@ const fs = require('fs');
                 continue; // Skip this URL and continue with the next one
             }
 
-            const items = await page.$$eval('.css-d0uhtl', (elements) => {
+            const permissions = await page.$$eval('.css-d0uhtl', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
+
+            const user_requirements = await page.$$eval('.css-16lkeer', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
+
+            const scopes = await page.$$eval('.css-cmr47g', (elements) => {
                 return elements.map((element) => element.textContent);
             });
 
