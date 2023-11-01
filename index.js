@@ -23,7 +23,6 @@ const fs = require('fs');
             await browser.close();
             return;
         }
-
         const links = data.trim().split('\n');
         const itemsArray = [];
 
@@ -33,7 +32,7 @@ const fs = require('fs');
             await page.goto(url);
 
             try {
-                await page.waitForSelector('.css-legcjp', { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
+                await page.waitForSelector('.css-legcjp', {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
             } catch (error) {
                 console.error(`Timeout waiting for selector '.css-legcjp' for URL: ${url}`);
                 continue; // Skip this URL and continue with the next one
@@ -64,7 +63,6 @@ const fs = require('fs');
 
             // Increment the line number and include it in the log statement
             lineNumber++;
-            console.log(`Line ${lineNumber} - Items:`, items);
             console.log(user_requirements);
             console.log(scopes);
             console.log(`Line ${lineNumber} - Items:`, item);
