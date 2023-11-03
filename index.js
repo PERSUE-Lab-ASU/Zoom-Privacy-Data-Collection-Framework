@@ -49,16 +49,45 @@ const fs = require('fs');
             const scopes = await page.$$eval('.css-cmr47g', (elements) => {
                 return elements.map((element) => element.textContent);
             });
+            await page.$$eval('.MuiLink-root', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
+            const linksToFind = [
+                'Developer Documentation',
+                'Developer Privacy Policy',
+                'Developer Support',
+                'Developer Terms of Use',
+            ];
+
+            const hrefs = {};
+
+            for (const linkText of linksToFind) {
+                const href = await page.evaluate((text) => {
+                    const links = document.querySelectorAll('.MuiLink-root');
+                    for (const link of links) {
+                        if (link.textContent === text) {
+                            return link.getAttribute('href');
+                        }
+                    }
+                    return null;
+                }, linkText);
+
+                hrefs[linkText] = href;
+            }
 
             const pageTitle = await page.title();
 
             // Create a JSON object for the current link
             const item = {
-                url: url,
-                pageTitle: pageTitle,
+                appName: pageTitle,
+                appUrl: url,
                 permissions: permissions,
                 scopes: scopes,
-                user_requirements: user_requirements
+                userRequirements: user_requirements,
+                developerDocumentation: hrefs['Developer Documentation'],
+                developerPrivacyPolicy: hrefs['Developer Privacy Policy'],
+                developerSupport: hrefs['Developer Support'],
+                developerTermsOfUse: hrefs['Developer Terms of Use']
             };
 
             // Increment the line number and include it in the log statement
