@@ -110,7 +110,7 @@ const fs = require('fs');
             //         .map(element => element.textContent.trim());
             // });
 // Log the information
-            console.log('View Information Elements:', viewInformationElements);
+//             console.log('View Information Elements:', viewInformationElements);
             // console.log('Manage Information Elements:', manageInformationElements);
             const linksToFind = [
                 'Developer Documentation',
