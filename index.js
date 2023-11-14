@@ -33,6 +33,7 @@ const fs = require('fs');
 
             try {
                 await page.waitForSelector('.css-legcjp', {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
+                console.log("Page Loaded!")
             } catch (error) {
                 console.error(`Timeout waiting for selector '.css-legcjp' for URL: ${url}`);
                 continue; // Skip this URL and continue with the next one
