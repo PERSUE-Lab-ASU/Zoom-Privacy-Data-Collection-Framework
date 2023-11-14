@@ -111,7 +111,7 @@ const fs = require('fs');
             // });
 // Log the information
 //             console.log('View Information Elements:', viewInformationElements);
-            // console.log('Manage Information Elements:', manageInformationElements);
+//              console.log('Manage Information Elements:', manageInformationElements);
             const linksToFind = [
                 'Developer Documentation',
                 'Developer Privacy Policy',
