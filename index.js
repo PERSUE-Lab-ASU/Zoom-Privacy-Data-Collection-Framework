@@ -25,16 +25,16 @@ const fs = require('fs');
         const links = data.trim().split('\n');
         const itemsArray = [];
 
+
         for (let link of links) {
             const url = 'https://marketplace.zoom.us' + link;
 
-            await page.goto(url);
-
             try {
-                await page.waitForSelector('.css-legcjp', {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
-                console.log("Page Loaded!")
+                // Set the navigation timeout directly in the page.goto options
+                await page.goto(url, { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
+                console.log("Page Loaded!");
             } catch (error) {
-                console.error(`Timeout waiting for selector '.css-legcjp' for URL: ${url}`);
+                console.error(`Timeout waiting for URL: ${url}`);
                 continue; // Skip this URL and continue with the next one
             }
 
