@@ -4,10 +4,9 @@ const fs = require('fs');
 (async () => {
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
-    await page.setDefaultNavigationTimeout(0);
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-
+    await page.setDefaultNavigationTimeout(0);
     // Specify the path to the text file
     const filePath = 'links.txt';
     // Get the current date and time as a formatted string
