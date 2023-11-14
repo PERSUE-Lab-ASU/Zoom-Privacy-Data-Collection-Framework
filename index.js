@@ -53,7 +53,7 @@ const fs = require('fs');
 
             const viewInformationElements = await page.evaluate(() => {
                 const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
-
+                //
                 // Define a recursive function to check ancestors for the inner text
                 const hasParentWithText = (element, text) => {
                     if (!element || element.textContent.includes("App can manage information")) {
