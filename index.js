@@ -4,10 +4,9 @@ const fs = require('fs');
 (async () => {
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
-
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-
+    await page.setDefaultNavigationTimeout(0);
     // Specify the path to the text file
     const filePath = 'links.txt';
     // Get the current date and time as a formatted string
@@ -26,21 +25,19 @@ const fs = require('fs');
         const links = data.trim().split('\n');
         const itemsArray = [];
 
+
         for (let link of links) {
             const url = 'https://marketplace.zoom.us' + link;
 
-            await page.goto(url);
-
             try {
-                await page.waitForSelector('.css-legcjp', {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
+                // Set the navigation timeout directly in the page.goto options
+                await page.goto(url, { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
+                console.log("Page Loaded!");
             } catch (error) {
-                console.error(`Timeout waiting for selector '.css-legcjp' for URL: ${url}`);
+                console.error(`Timeout waiting for URL: ${url}`);
                 continue; // Skip this URL and continue with the next one
             }
 
-            const permissions = await page.$$eval('.css-d0uhtl', (elements) => {
-                return elements.map((element) => element.textContent);
-            });
 
             const user_requirements = await page.$$eval('.css-16lkeer', (elements) => {
                 return elements.map((element) => element.textContent);
@@ -52,6 +49,69 @@ const fs = require('fs');
             await page.$$eval('.MuiLink-root', (elements) => {
                 return elements.map((element) => element.textContent);
             });
+
+
+            const viewInformationElements = await page.evaluate(() => {
+                const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
+                //
+                // Define a recursive function to check ancestors for the inner text
+                const hasParentWithText = (element, text) => {
+                    if (!element || element.textContent.includes("App can manage information")) {
+                        return false;
+                    }
+
+                    if (element.textContent.includes(text)) {
+                        return true;
+                    }
+
+                    return hasParentWithText(element.parentElement, text);
+                };
+
+                return elements
+                    .filter(element => {
+                        // Check if any ancestor up to the root contains the inner text
+                        return hasParentWithText(element.parentElement, 'App can view information');
+                    })
+                    .map(element => element.textContent.trim());
+            });
+
+            const manageInformationElements = await page.evaluate(() => {
+                const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
+
+                // Define a recursive function to check ancestors for the inner text
+                const hasParentWithText = (element, text) => {
+                    if (!element || element.textContent.includes("App can view information")) {
+                        return false;
+                    }
+
+                    if (element.textContent.includes(text)) {
+                        return true;
+                    }
+
+                    return hasParentWithText(element.parentElement, text);
+                };
+
+                return elements
+                    .filter(element => {
+                        // Check if any ancestor up to the root contains the inner text
+                        return hasParentWithText(element.parentElement, 'App can manage information');
+                    })
+                    .map(element => element.textContent.trim());
+            });
+
+            //
+            // const manageInformationElements = await page.evaluate(() => {
+            //     const elements = Array.from(document.querySelectorAll('.css-gyjl6 + .css-0 .css-d0uhtl'));
+            //     return elements
+            //         .filter(element => {
+            //             const parent = element.closest('.MuiBox-root.css-gyjl6'); // Replace 'your-parent-selector' with the actual parent selector
+            //             return parent && parent.parent && parent.parent.parent.parent.parent.parent.parent.parent.innerText.includes("App can manage information");
+            //         })
+            //         .map(element => element.textContent.trim());
+            // });
+// Log the information
+//             console.log('View Information Elements:', viewInformationElements);
+            // console.log('Manage Information Elements:', manageInformationElements);
             const linksToFind = [
                 'Developer Documentation',
                 'Developer Privacy Policy',
@@ -81,9 +141,10 @@ const fs = require('fs');
             const item = {
                 appName: pageTitle,
                 appUrl: url,
-                permissions: permissions,
                 scopes: scopes,
                 userRequirements: user_requirements,
+                viewPermissions: viewInformationElements,
+                managePermissions: manageInformationElements,
                 developerDocumentation: hrefs['Developer Documentation'],
                 developerPrivacyPolicy: hrefs['Developer Privacy Policy'],
                 developerSupport: hrefs['Developer Support'],
@@ -92,8 +153,8 @@ const fs = require('fs');
 
             // Increment the line number and include it in the log statement
             lineNumber++;
-            console.log(user_requirements);
-            console.log(scopes);
+            // console.log(user_requirements);
+            // console.log(scopes);
             console.log(`Line ${lineNumber} - Items:`, item);
 
             itemsArray.push(item);
