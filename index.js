@@ -2,9 +2,12 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 // test branch
 (async () => {
+    let errorCount = 0;
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        // executablePath: 'path/to/your/chrome.exe'
+    });
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
     // Specify the path to the text file
@@ -30,11 +33,14 @@ const fs = require('fs');
             const url = 'https://marketplace.zoom.us' + link;
 
             try {
+                console.log("Loading Page...");
                 // Set the navigation timeout directly in the page.goto options
                 await page.goto(url, { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
+                await page.waitForSelector('.css-legcjp', {timeout: 60000});
                 console.log("Page Loaded!");
             } catch (error) {
                 console.error(`Timeout waiting for URL: ${url}`);
+                // errorCount++;
                 continue; // Skip this URL and continue with the next one
             }
 
@@ -155,9 +161,17 @@ const fs = require('fs');
             lineNumber++;
             // console.log(user_requirements);
             // console.log(scopes);
-            console.log(`Line ${lineNumber} - Items:`, item);
+            console.log(`Line ${lineNumber} - Items:`, item, 'Error Count: ', errorCount);
 
             itemsArray.push(item);
+
+            const waitTime = 5;
+            console.log("Starting " + waitTime + " second wait:");
+            for (let i = 1; i < (waitTime + 1); i++) {
+                await delay(1000);
+                process.stdout.write(i + " ");
+            }
+            console.log("\nCompleted waiting for " + waitTime + " seconds");
         }
 
         // Write all items as a JSON array to the output JSON file
@@ -166,7 +180,7 @@ const fs = require('fs');
                 console.error('Error writing the output file:', err);
             } else {
                 console.log('Items have been written to', outputFilePath);
-
+                console.log('Error Count: ', errorCount)
                 const endTime = Date.now(); // Record the end time
                 const executionTime = (endTime - startTime) / 1000; // Calculate execution time in seconds
                 console.log('Program execution time:', executionTime, 'seconds');
