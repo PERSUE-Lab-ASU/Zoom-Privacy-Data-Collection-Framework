@@ -7,6 +7,8 @@ const fs = require('fs');
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
     const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/chromium-browser'
+
         // executablePath: 'path/to/your/chrome.exe'
     });
     const page = await browser.newPage();
