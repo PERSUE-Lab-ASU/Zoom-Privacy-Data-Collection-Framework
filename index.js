@@ -7,7 +7,7 @@ const fs = require('fs');
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/chromium-browser'
+        // executablePath: '/usr/bin/chromium-browser'
 
         // executablePath: 'path/to/your/chrome.exe'
     });
@@ -168,7 +168,7 @@ const fs = require('fs');
 
             itemsArray.push(item);
 
-            const waitTime = 5;
+            const waitTime = 10;
             console.log("Starting " + waitTime + " second wait:");
             for (let i = 1; i < (waitTime + 1); i++) {
                 await delay(1000);
