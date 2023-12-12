@@ -168,7 +168,7 @@ const fs = require('fs');
 
             itemsArray.push(item);
 
-            const waitTime = 10;
+            const waitTime = 20;
             console.log("Starting " + waitTime + " second wait:");
             for (let i = 1; i < (waitTime + 1); i++) {
                 await delay(1000);
