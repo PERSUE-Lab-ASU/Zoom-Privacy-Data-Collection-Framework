@@ -41,7 +41,7 @@ const {writeFile} = require("fs");
 
     const baseURL = 'https://marketplace.zoom.us';
 
-    for (let i = 1; i < 2; i++) {
+    for (let i = 1; i < 85; i++) {
         // Navigate to the website
         await page.goto(`${baseURL}/apps?page=${i}`);
 
