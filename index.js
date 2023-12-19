@@ -257,13 +257,13 @@ const {writeFile} = require("fs");
 
             itemsArray.push(item);
 
-            // const waitTime = 5;
-            // console.log("Starting " + waitTime + " second wait:");
-            // for (let i = 1; i < (waitTime + 1); i++) {
-            //     await delay(1000);
-            //     process.stdout.write(i + " ");
-            // }
-            // console.log("\nCompleted waiting for " + waitTime + " seconds");
+            const waitTime = 5;
+            console.log("Starting " + waitTime + " second wait:");
+            for (let i = 1; i < (waitTime + 1); i++) {
+                await delay(1000);
+                process.stdout.write(i + " ");
+            }
+            console.log("\nCompleted waiting for " + waitTime + " seconds");
         }
 
         // Write all items as a JSON array to the output JSON file
