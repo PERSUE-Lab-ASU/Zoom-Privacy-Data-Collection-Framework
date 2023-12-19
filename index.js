@@ -1,8 +1,13 @@
 const puppeteer = require('puppeteer');
+const fspromise = require('fs').promises; // Use fs.promises for async file operations
+
 const delay = ms => new Promise(res => setTimeout(res, ms));
 const fs = require('fs');
+const {writeFile} = require("fs");
 // test branch
 (async () => {
+    const currentDate = new Date().toISOString().split('T')[0].replace(/[^0-9]/g, '-');
+
     let errorCount = 0;
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
@@ -13,13 +18,84 @@ const fs = require('fs');
     });
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
+
+
+    // Check if the directory exists, and create it if it doesn't
+    if (!fs.existsSync(`${currentDate}/links/`)) {
+        fs.mkdirSync(`${currentDate}/links/`, { recursive: true });
+    }
+
+    if (!fs.existsSync(`${currentDate}/app-data/`)) {
+        fs.mkdirSync(`${currentDate}/app-data/`, { recursive: true });
+    }
+
+    if (!fs.existsSync(`${currentDate}/site-snapshots/`)) {
+        fs.mkdirSync(`${currentDate}/site-snapshots/`, { recursive: true });
+    }
+
+    if (!fs.existsSync(`${currentDate}/logs/`)) {
+        fs.mkdirSync(`${currentDate}/logs/`, { recursive: true });
+    }
+
+    let all_links = []
+
+    const baseURL = 'https://marketplace.zoom.us';
+
+    for (let i = 1; i < 2; i++) {
+        // Navigate to the website
+        await page.goto(`${baseURL}/apps?page=${i}`);
+
+        // Get the page title
+        const pageTitle = await page.title();
+
+        // Wait for the links to load
+        let links = [];
+
+        while (true) {
+            // Use page.$$eval to extract all links
+            links = await page.$$eval('a[class="css-4xcoe5"]', (elements) => {
+                return elements.map((element) => element.getAttribute('href'));
+            });
+
+            // Check if any of the links is '/apps/undefined'
+            if (!links.includes('/apps/undefined')) {
+                break; // Exit the loop when there are no '/apps/undefined' links
+            }
+
+            // If there are '/apps/undefined' links, wait for a while and then check again
+            await page.waitForTimeout(1000); // Wait for 1 second before rechecking
+        }
+
+        // Add the baseURL to each link
+        links = links.map((link) => `${baseURL}${link}`);
+
+        console.log(links);
+        all_links = all_links.concat(links);
+    }
+
+    console.log('Links:', all_links);
+
+    const filePath = `${currentDate}/links/links.txt`;
+
+// Convert the array of links to a newline-separated string
+    const linksString = all_links.join('\n');
+
+// Write the links to the text file
+    writeFile(filePath, linksString, (err) => {
+        if (err) {
+            console.error('Error writing to the file:', err);
+        } else {
+            console.log('Links have been written to', filePath);
+        }
+    });
+
+
     // Specify the path to the text file
-    const filePath = 'links.txt';
+    // const filePath = 'links.txt';
     // Get the current date and time as a formatted string
-    const currentDate = new Date().toISOString().split('T')[0].replace(/[^0-9]/g, '-');
     console.log(currentDate)
     // Append the current date to the file name
-    const outputFilePath = `zoom_marketplace_${currentDate}.json`;
+    const outputFilePath = `${currentDate}/app-data/zoom_marketplace_${currentDate}.json`;
 
     // Read the links from the text file
     fs.readFile(filePath, 'utf8', async (err, data) => {
@@ -33,13 +109,26 @@ const fs = require('fs');
 
 
         for (let link of links) {
-            const url = 'https://marketplace.zoom.us' + link;
+            const url = link;
 
             try {
                 console.log("Loading Page...");
                 // Set the navigation timeout directly in the page.goto options
                 await page.goto(url, { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
                 await page.waitForSelector('.css-legcjp', {timeout: 60000});
+
+                // Get the HTML content of the page
+                const htmlContent = await page.content();
+                const pageTitle = await page.title();
+
+                // Create a unique filename based on the current date and time
+                const filename = `${currentDate}/site-snapshots/${pageTitle}_${currentDate}.html`;
+
+                // const screenshotBuffer = await page.screenshot();
+
+                // Write the HTML content to a file
+                await fspromise.writeFile(filename, htmlContent);
+
                 console.log("Page Loaded!");
             } catch (error) {
                 console.error(`Timeout waiting for URL: ${url}`);
@@ -168,13 +257,13 @@ const fs = require('fs');
 
             itemsArray.push(item);
 
-            const waitTime = 5;
-            console.log("Starting " + waitTime + " second wait:");
-            for (let i = 1; i < (waitTime + 1); i++) {
-                await delay(1000);
-                process.stdout.write(i + " ");
-            }
-            console.log("\nCompleted waiting for " + waitTime + " seconds");
+            // const waitTime = 5;
+            // console.log("Starting " + waitTime + " second wait:");
+            // for (let i = 1; i < (waitTime + 1); i++) {
+            //     await delay(1000);
+            //     process.stdout.write(i + " ");
+            // }
+            // console.log("\nCompleted waiting for " + waitTime + " seconds");
         }
 
         // Write all items as a JSON array to the output JSON file
@@ -188,7 +277,26 @@ const fs = require('fs');
                 const executionTime = (endTime - startTime) / 1000; // Calculate execution time in seconds
                 console.log('Program execution time:', executionTime, 'seconds');
             }
+
+
         });
+
+        // After processing the links, add the following code for logging
+        const logsFilePath = `${currentDate}/logs/logs.txt`;
+        const executionTime = (Date.now() - startTime) / 1000;
+
+        // Write program execution information to the log file
+        let logContent = `Program execution time: ${executionTime} seconds\n`;
+        logContent += `Total Errors: ${errorCount}\n`;
+        logContent += '===============================\n';
+
+        fs.appendFileSync(logsFilePath, logContent);
+
+        // Close the logs.txt file
+        console.log('Error Count: ', errorCount);
+        console.log('Program execution time:', executionTime, 'seconds');
+        console.log('Logs have been written to', logsFilePath);
+
 
         await browser.close();
     });
