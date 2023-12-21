@@ -8,8 +8,6 @@ const fs = require('fs');
 const {writeFile} = require("fs");
 // test branch
 (async () => {
-
-
     const currentDate = new Date().toISOString().split('T')[0].replace(/[^0-9]/g, '-');
 
     let errorCount = 0;
@@ -301,9 +299,6 @@ const {writeFile} = require("fs");
                 console.log('Email sent\n');
             }
         });
-
-
         await browser.close();
     });
-//     wow
 })();
