@@ -1,47 +1,48 @@
 const puppeteer = require('puppeteer');
 const fspromise = require('fs').promises; // Use fs.promises for async file operations
+require('dotenv').config();
+const nodemailer = require('nodemailer');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 const fs = require('fs');
 const {writeFile} = require("fs");
 // test branch
 (async () => {
+
+
     const currentDate = new Date().toISOString().split('T')[0].replace(/[^0-9]/g, '-');
 
     let errorCount = 0;
     const startTime = Date.now(); // Record the start time
     let lineNumber = 0; // Initialize the line number
-    const browser = await puppeteer.launch({
-        // executablePath: '/usr/bin/chromium-browser'
-
-        // executablePath: 'path/to/your/chrome.exe'
-    });
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
 
+    file_path_prefix = "data/"
 
     // Check if the directory exists, and create it if it doesn't
-    if (!fs.existsSync(`${currentDate}/links/`)) {
-        fs.mkdirSync(`${currentDate}/links/`, { recursive: true });
+    if (!fs.existsSync(file_path_prefix + `${currentDate}/links/`)) {
+        fs.mkdirSync(file_path_prefix + `${currentDate}/links/`, {recursive: true});
     }
 
-    if (!fs.existsSync(`${currentDate}/app-data/`)) {
-        fs.mkdirSync(`${currentDate}/app-data/`, { recursive: true });
+    if (!fs.existsSync(file_path_prefix +`${currentDate}/app-data/`)) {
+        fs.mkdirSync(file_path_prefix + `${currentDate}/app-data/`, {recursive: true});
     }
 
-    if (!fs.existsSync(`${currentDate}/site-snapshots/`)) {
-        fs.mkdirSync(`${currentDate}/site-snapshots/`, { recursive: true });
+    if (!fs.existsSync(file_path_prefix + `${currentDate}/site-snapshots/`)) {
+        fs.mkdirSync(file_path_prefix + `${currentDate}/site-snapshots/`, {recursive: true});
     }
 
-    if (!fs.existsSync(`${currentDate}/logs/`)) {
-        fs.mkdirSync(`${currentDate}/logs/`, { recursive: true });
+    if (!fs.existsSync(file_path_prefix + `${currentDate}/logs/`)) {
+        fs.mkdirSync(file_path_prefix + `${currentDate}/logs/`, {recursive: true});
     }
 
     let all_links = []
 
     const baseURL = 'https://marketplace.zoom.us';
 
-    for (let i = 1; i < 85; i++) {
+    for (let i = 1; i < 2; i++) {
         // Navigate to the website
         await page.goto(`${baseURL}/apps?page=${i}`);
 
@@ -73,9 +74,10 @@ const {writeFile} = require("fs");
         all_links = all_links.concat(links);
     }
 
+
     console.log('Links:', all_links);
 
-    const filePath = `${currentDate}/links/links.txt`;
+    const filePath = file_path_prefix + `${currentDate}/links/links.txt`;
 
 // Convert the array of links to a newline-separated string
     const linksString = all_links.join('\n');
@@ -95,7 +97,7 @@ const {writeFile} = require("fs");
     // Get the current date and time as a formatted string
     console.log(currentDate)
     // Append the current date to the file name
-    const outputFilePath = `${currentDate}/app-data/zoom_marketplace_${currentDate}.json`;
+    const outputFilePath =file_path_prefix + `${currentDate}/app-data/zoom_marketplace_${currentDate}.json`;
 
     // Read the links from the text file
     fs.readFile(filePath, 'utf8', async (err, data) => {
@@ -114,7 +116,7 @@ const {writeFile} = require("fs");
             try {
                 console.log("Loading Page...");
                 // Set the navigation timeout directly in the page.goto options
-                await page.goto(url, { timeout: 60000 }); // Increase the timeout value to 60000ms (60 seconds)
+                await page.goto(url, {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
                 await page.waitForSelector('.css-legcjp', {timeout: 60000});
 
                 // Get the HTML content of the page
@@ -122,7 +124,7 @@ const {writeFile} = require("fs");
                 const pageTitle = await page.title();
 
                 // Create a unique filename based on the current date and time
-                const filename = `${currentDate}/site-snapshots/${pageTitle}_${currentDate}.html`;
+                const filename = file_path_prefix + `${currentDate}/site-snapshots/${pageTitle}_${currentDate}.html`;
 
                 // const screenshotBuffer = await page.screenshot();
 
@@ -197,19 +199,6 @@ const {writeFile} = require("fs");
                     .map(element => element.textContent.trim());
             });
 
-            //
-            // const manageInformationElements = await page.evaluate(() => {
-            //     const elements = Array.from(document.querySelectorAll('.css-gyjl6 + .css-0 .css-d0uhtl'));
-            //     return elements
-            //         .filter(element => {
-            //             const parent = element.closest('.MuiBox-root.css-gyjl6'); // Replace 'your-parent-selector' with the actual parent selector
-            //             return parent && parent.parent && parent.parent.parent.parent.parent.parent.parent.parent.innerText.includes("App can manage information");
-            //         })
-            //         .map(element => element.textContent.trim());
-            // });
-// Log the information
-//             console.log('View Information Elements:', viewInformationElements);
-            // console.log('Manage Information Elements:', manageInformationElements);
             const linksToFind = [
                 'Developer Documentation',
                 'Developer Privacy Policy',
@@ -249,15 +238,13 @@ const {writeFile} = require("fs");
                 developerTermsOfUse: hrefs['Developer Terms of Use']
             };
 
-            // Increment the line number and include it in the log statement
             lineNumber++;
-            // console.log(user_requirements);
-            // console.log(scopes);
+
             console.log(`Line ${lineNumber} - Items:`, item, 'Error Count: ', errorCount);
 
             itemsArray.push(item);
 
-            const waitTime = 5;
+            const waitTime = 2;
             console.log("Starting " + waitTime + " second wait:");
             for (let i = 1; i < (waitTime + 1); i++) {
                 await delay(1000);
@@ -282,15 +269,45 @@ const {writeFile} = require("fs");
         });
 
         // After processing the links, add the following code for logging
-        const logsFilePath = `${currentDate}/logs/logs.txt`;
+        const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
         const executionTime = (Date.now() - startTime) / 1000;
 
         // Write program execution information to the log file
         let logContent = `Program execution time: ${executionTime} seconds\n`;
         logContent += `Total Errors: ${errorCount}\n`;
+        logContent += `Total Apps: ${all_links.length}\n`
         logContent += '===============================\n';
 
         fs.appendFileSync(logsFilePath, logContent);
+
+
+        console.log(process.env.EMAIL, process.env.PASSWORD)
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.SENDER_EMAIL,
+                pass: process.env.PASSWORD
+            }
+        });
+
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: process.env.RECIPIENT_EMAIL,
+            subject: `Log Content ${currentDate}`,
+            text: logContent
+        };
+
+// Send email
+        await transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Email sent\n');
+            }
+        });
+
 
         // Close the logs.txt file
         console.log('Error Count: ', errorCount);
