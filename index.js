@@ -19,14 +19,14 @@ const {writeFile} = require("fs");
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
 
-    file_path_prefix = "data/"
+    let file_path_prefix = "data/"
 
     // Check if the directory exists, and create it if it doesn't
     if (!fs.existsSync(file_path_prefix + `${currentDate}/links/`)) {
         fs.mkdirSync(file_path_prefix + `${currentDate}/links/`, {recursive: true});
     }
 
-    if (!fs.existsSync(file_path_prefix +`${currentDate}/app-data/`)) {
+    if (!fs.existsSync(file_path_prefix + `${currentDate}/app-data/`)) {
         fs.mkdirSync(file_path_prefix + `${currentDate}/app-data/`, {recursive: true});
     }
 
@@ -42,7 +42,7 @@ const {writeFile} = require("fs");
 
     const baseURL = 'https://marketplace.zoom.us';
 
-    for (let i = 1; i < 2; i++) {
+    for (let i = 1; i < 85; i++) {
         // Navigate to the website
         await page.goto(`${baseURL}/apps?page=${i}`);
 
@@ -97,7 +97,7 @@ const {writeFile} = require("fs");
     // Get the current date and time as a formatted string
     console.log(currentDate)
     // Append the current date to the file name
-    const outputFilePath =file_path_prefix + `${currentDate}/app-data/zoom_marketplace_${currentDate}.json`;
+    const outputFilePath = file_path_prefix + `${currentDate}/app-data/zoom_marketplace_${currentDate}.json`;
 
     // Read the links from the text file
     fs.readFile(filePath, 'utf8', async (err, data) => {
@@ -199,12 +199,7 @@ const {writeFile} = require("fs");
                     .map(element => element.textContent.trim());
             });
 
-            const linksToFind = [
-                'Developer Documentation',
-                'Developer Privacy Policy',
-                'Developer Support',
-                'Developer Terms of Use',
-            ];
+            const linksToFind = ['Developer Documentation', 'Developer Privacy Policy', 'Developer Support', 'Developer Terms of Use',];
 
             const hrefs = {};
 
@@ -278,16 +273,15 @@ const {writeFile} = require("fs");
         logContent += `Total Apps: ${all_links.length}\n`
         logContent += '===============================\n';
 
+        // write to logs to file
         fs.appendFileSync(logsFilePath, logContent);
 
 
         console.log(process.env.EMAIL, process.env.PASSWORD)
 
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.SENDER_EMAIL,
-                pass: process.env.PASSWORD
+            service: 'gmail', auth: {
+                user: process.env.SENDER_EMAIL, pass: process.env.PASSWORD
             }
         });
 
@@ -300,19 +294,13 @@ const {writeFile} = require("fs");
         };
 
 // Send email
-        await transporter.sendMail(mailOptions, function (error, info) {
+        await transporter.sendMail(mailOptions, function (error) {
             if (error) {
                 console.log(error);
             } else {
                 console.log('Email sent\n');
             }
         });
-
-
-        // Close the logs.txt file
-        console.log('Error Count: ', errorCount);
-        console.log('Program execution time:', executionTime, 'seconds');
-        console.log('Logs have been written to', logsFilePath);
 
 
         await browser.close();
