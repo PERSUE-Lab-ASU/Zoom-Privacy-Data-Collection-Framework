@@ -124,15 +124,13 @@ const {writeFile} = require("fs");
                 // Create a unique filename based on the current date and time
                 const filename = file_path_prefix + `${currentDate}/site-snapshots/${pageTitle}_${currentDate}.html`;
 
-                // const screenshotBuffer = await page.screenshot();
-
-                // Write the HTML content to a file
+                // uses fspromise to aysncronously write to the file
                 await fspromise.writeFile(filename, htmlContent);
 
                 console.log("Page Loaded!");
             } catch (error) {
                 console.error(`Timeout waiting for URL: ${url}`);
-                // errorCount++;
+                errorCount++;
                 continue; // Skip this URL and continue with the next one
             }
 
