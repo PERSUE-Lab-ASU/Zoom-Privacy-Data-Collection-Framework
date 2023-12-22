@@ -7,7 +7,7 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const fs = require('fs');
 const {writeFile} = require("fs");
-// test branch
+
 (async () => {
     const currentDate = new Date().toISOString().split('T')[0].replace(/[^0-9]/g, '-');
 
@@ -18,7 +18,7 @@ const {writeFile} = require("fs");
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
 
-    let file_path_prefix = "data/"
+    let file_path_prefix = "/mnt/data/projects/zoom-app-privacy-data/data/"
 
     // Check if the directory exists, and create it if it doesn't
     if (!fs.existsSync(file_path_prefix + `${currentDate}/links/`)) {
@@ -48,7 +48,7 @@ const {writeFile} = require("fs");
         try {
             // Navigate to the website
             await page.goto(`${zoomBaseURL}/apps?page=${i}`, {timeout: 60000});
-            await page.waitForSelector('.css-4xcoe5', {timeout: 60000});
+            await page.waitForSelector('.css-4xcoe5', {timeout: 10000});
 
             // Wait for the links to load
             let links = [];
