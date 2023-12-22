@@ -78,7 +78,6 @@ const {writeFile} = require("fs");
         }
     }
 
-
     console.log('Links:', allAppLinks);
 
     const filePath = file_path_prefix + `${currentDate}/links/links.txt`;
@@ -164,10 +163,10 @@ const {writeFile} = require("fs");
         // Write program execution information to the log file
         let logContent = `Program execution time: ${executionTime} seconds\n`;
         logContent += `Total Number Apps in Marketplace Today: ${allAppLinks.length}\n`
-        logContent += `Total Errors on First Pass: ${errorCount}\n`;
-        logContent += `Apps Links that didn't load on First Pass: ${retryFailedLinks}\n`;
-        logContent += `Total Errors on Second Pass: ${linksFailedToLoad.length}\n`;
-        logContent += `Apps Links that didn't load on Second Pass: ${linksFailedToLoad}\n`;
+        logContent += `Total Number of Errors in Program Run: ${errorCount}\n`;
+        logContent += `Apps Links that didn't load on First Pass: ${retryFailedLinks.join(' ')}\n`;
+        logContent += `Total Number of Links that didn't load on second pass: ${linksFailedToLoad.length}\n`;
+        logContent += `Apps Links that didn't load on Second Pass: ${linksFailedToLoad.join(' ')}\n`;
         logContent += '===============================\n';
 
         // write to logs to file
@@ -208,8 +207,13 @@ const {writeFile} = require("fs");
                 const htmlContent = await page.content();
                 const pageTitle = await page.title();
 
+                let regex = /[^a-zA-Z0-9]/g;
+
+                // Replace non-alphanumeric characters with an empty string
+                let app_path = pageTitle.replace(regex, '');
+
                 // Create a unique filename based on the current date and time
-                const filename = file_path_prefix + `${currentDate}/site-snapshots/${pageTitle}_${currentDate}.html`;
+                const filename = file_path_prefix + `${currentDate}/site-snapshots/${app_path}_${currentDate}.html`;
 
                 // uses fspromise to aysncronously write to the file
                 await fspromise.writeFile(filename, htmlContent);
