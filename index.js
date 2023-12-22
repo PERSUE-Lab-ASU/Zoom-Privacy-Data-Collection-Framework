@@ -44,8 +44,7 @@ const {writeFile} = require("fs");
 
     const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
 
-
-    for (let i = 1; i < 2; i++) {
+    for (let i = 1; i < 100; i++) {
         try {
             // Navigate to the website
             await page.goto(`${zoomBaseURL}/apps?page=${i}`, {timeout: 60000});
@@ -166,6 +165,7 @@ const {writeFile} = require("fs");
         let logContent = `Program execution time: ${executionTime} seconds\n`;
         logContent += `Total Number Apps in Marketplace Today: ${allAppLinks.length}\n`
         logContent += `Total Errors on First Pass: ${errorCount}\n`;
+        logContent += `Apps Links that didn't load on First Pass: ${retryFailedLinks}\n`;
         logContent += `Total Errors on Second Pass: ${linksFailedToLoad.length}\n`;
         logContent += `Apps Links that didn't load on Second Pass: ${linksFailedToLoad}\n`;
         logContent += '===============================\n';
