@@ -17,6 +17,7 @@ const {writeFile} = require("fs");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
+    let logContent = "";
 
     let file_path_prefix = "/mnt/data/projects/zoom-app-privacy-data/data/"
 
@@ -74,7 +75,7 @@ const {writeFile} = require("fs");
             console.log(links);
             allAppLinks = allAppLinks.concat(links);
         } catch (error) {
-            fs.appendFileSync(logsFilePath, `Failed to directory page: ${zoomBaseURL}/apps?page=${i}\n`); // Log the failure
+            logContent += `Failed to load directory page: ${zoomBaseURL}/apps?page=${i}\n`;
         }
     }
 
@@ -137,11 +138,9 @@ const {writeFile} = require("fs");
 
         // Log the final failed links
         if (linksFailedToLoad.length > 0) {
-            const failedLog = `Failed to load after retry:\n${linksFailedToLoad.join('\n')}\n`;
-            fs.appendFileSync(logsFilePath, failedLog);
+            logContent += `Failed to load after retry:\n${linksFailedToLoad.join('\n')}\n`;
         } else {
-            const failedLog = `\nAll links loaded successfully after retry!\n`;
-            fs.appendFileSync(logsFilePath, failedLog);
+            logContent += `\nAll links loaded successfully after retry!\n`;
         }
 
         // Write all items as a JSON array to the output JSON file
@@ -161,7 +160,7 @@ const {writeFile} = require("fs");
         const executionTime = (Date.now() - startTime) / 1000;
 
         // Write program execution information to the log file
-        let logContent = `Program execution time: ${executionTime} seconds\n`;
+        logContent += `Program execution time: ${executionTime} seconds\n`;
         logContent += `Total Number Apps in Marketplace Today: ${allAppLinks.length}\n`
         logContent += `Total Number of Errors in Program Run: ${errorCount}\n`;
         logContent += `Apps Links that didn't load on First Pass: ${retryFailedLinks.join(' ')}\n`;
@@ -171,8 +170,6 @@ const {writeFile} = require("fs");
 
         // write to logs to file
         fs.appendFileSync(logsFilePath, logContent);
-
-        console.log(process.env.SENDER_EMAIL, process.env.PASSWORD)
 
         const transporter = nodemailer.createTransport({
             service: 'gmail', auth: {
