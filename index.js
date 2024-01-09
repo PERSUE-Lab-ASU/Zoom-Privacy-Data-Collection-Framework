@@ -2,6 +2,8 @@ const puppeteer = require('puppeteer');
 const fspromise = require('fs').promises; // Use fs.promises for async file operations
 require('dotenv').config();
 const nodemailer = require('nodemailer');
+const { exec } = require('child_process');
+const path = require('path');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -324,5 +326,35 @@ const {writeFile} = require("fs");
 
         // Close the browser at the end of program execution
         await browser.close();
+
+        compressFolder();
+
+        function compressFolder() {
+            const folderName = 'site-snapshots';
+            const zipFilePath = path.join(file_path_prefix, `${currentDate}/`, `${folderName}/`);
+
+            process.chdir(`data/${currentDate}/`);
+
+            // Zip the folder
+            exec(`zip -r site-snapshots.zip site-snapshots/`, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error compressing folder: ${error}`);
+                    return;
+                }
+
+                // Remove the folder after successful compression
+                exec(`rm -rf site-snapshots`, (rmError, rmStdout, rmStderr) => {
+                    if (rmError) {
+                        console.error(`Error deleting folder: ${rmError}`);
+                    } else {
+                        console.log(`Folder deleted successfully: ${zipFilePath}`);
+                    }
+                });
+
+                console.log(`Folder compressed successfully: ${zipFilePath}`);
+            });
+        }
+
+
     });
 })();
