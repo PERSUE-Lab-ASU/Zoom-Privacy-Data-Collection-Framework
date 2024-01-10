@@ -47,7 +47,7 @@ const {writeFile} = require("fs");
 
     const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
 
-    for (let i = 1; i < 2; i++) {
+    for (let i = 1; i < 100; i++) {
         try {
             // Navigate to the website
             await page.goto(`${zoomBaseURL}/apps?page=${i}`, {timeout: 60000});
