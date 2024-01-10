@@ -333,7 +333,7 @@ const {writeFile} = require("fs");
             const folderName = 'site-snapshots';
             const zipFilePath = path.join(file_path_prefix, `${currentDate}/`, `${folderName}/`);
 
-            process.chdir(`data/${currentDate}/`);
+            process.chdir(`${file_path_prefix}${currentDate}/`);
 
             // Zip the folder
             exec(`zip -r site-snapshots.zip site-snapshots/`, (error, stdout, stderr) => {
