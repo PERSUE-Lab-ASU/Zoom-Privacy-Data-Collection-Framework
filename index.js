@@ -22,6 +22,7 @@ const {writeFile} = require("fs");
     let logContent = "";
 
     let file_path_prefix = "/mnt/data/projects/zoom-app-privacy-data/data/"
+    // let file_path_prefix = "data/"
 
     // Check if the directory exists, and create it if it doesn't
     if (!fs.existsSync(file_path_prefix + `${currentDate}/links/`)) {
@@ -34,6 +35,10 @@ const {writeFile} = require("fs");
 
     if (!fs.existsSync(file_path_prefix + `${currentDate}/site-snapshots/`)) {
         fs.mkdirSync(file_path_prefix + `${currentDate}/site-snapshots/`, {recursive: true});
+    }
+
+    if (!fs.existsSync(file_path_prefix + `${currentDate}/privacy-policy-snapshots/`)) {
+        fs.mkdirSync(file_path_prefix + `${currentDate}/privacy-policy-snapshots/`, {recursive: true});
     }
 
     if (!fs.existsSync(file_path_prefix + `${currentDate}/logs/`)) {
@@ -226,6 +231,24 @@ const {writeFile} = require("fs");
                 const scopes = await page.$$eval('.css-cmr47g', (elements) => {
                     return elements.map((element) => element.textContent);
                 });
+
+                const developer = await page.$eval('.css-dpgp0', (element) => {
+                    return element.textContent.substring(3);
+                });
+
+                const categories = await page.$$eval('.css-1czv3e2', (elements) => {
+                    return elements.map((element) => element.textContent);
+                });
+
+                const description = await page.$eval('.css-1gpdksz', (element) => {
+                    return element.textContent;
+                });
+
+                const worksInElement = await page.$('.css-1s3wv3b');
+                const worksInText = worksInElement ? await worksInElement.evaluate(node => node.textContent.trim()) : '';
+                const worksInArray = worksInText ? worksInText.split(',').map((item, index) => (index === 0 ? item.replace('Works In: ', '') : item)) : [];
+
+                // what is this?
                 await page.$$eval('.MuiLink-root', (elements) => {
                     return elements.map((element) => element.textContent);
                 });
@@ -299,7 +322,11 @@ const {writeFile} = require("fs");
                 // Create a JSON object for the current link
                 const item = {
                     appName: pageTitle,
+                    dev: developer,
                     appUrl: url,
+                    categories: categories,
+                    description: description,
+                    worksIn: worksInArray,
                     scopes: scopes,
                     userRequirements: user_requirements,
                     viewPermissions: viewInformationElements,
@@ -309,6 +336,25 @@ const {writeFile} = require("fs");
                     developerSupport: hrefs['Developer Support'],
                     developerTermsOfUse: hrefs['Developer Terms of Use']
                 };
+
+                await page.goto(hrefs['Developer Privacy Policy'], {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
+                // await page.waitForSelector('.css-legcjp', {timeout: 60000});
+
+                // Get the HTML content of the page
+                const privacy_policy_htmlContent = await page.content();
+                // const privacy_policy_pageTitle = await page.title();
+                await delay(10000);
+
+                // Replace non-alphanumeric characters with an empty string
+                let privacy_policy_app_path = pageTitle.replace(regex, '');
+
+                // Create a unique filename based on the current date and time
+                const privacy_policy_filename = file_path_prefix + `${currentDate}/privacy-policy-snapshots/${privacy_policy_app_path}_privacy_policy_${currentDate}.html`;
+
+                // uses fspromise to aysncronously write to the file
+                await fspromise.writeFile(privacy_policy_filename, privacy_policy_htmlContent);
+
+
 
                 lineNumber++;
 
@@ -326,24 +372,25 @@ const {writeFile} = require("fs");
 
         // Close the browser at the end of program execution
         await browser.close();
+        process.chdir(`${file_path_prefix}${currentDate}/`);
 
-        compressFolder();
+        compressFolder('site-snapshots');
+        compressFolder('privacy-policy-snapshots')
 
-        function compressFolder() {
-            const folderName = 'site-snapshots';
+        function compressFolder(folderName) {
+            // const folderName = 'site-snapshots';
             const zipFilePath = path.join(file_path_prefix, `${currentDate}/`, `${folderName}/`);
 
-            process.chdir(`${file_path_prefix}${currentDate}/`);
 
             // Zip the folder
-            exec(`zip -r site-snapshots.zip site-snapshots/`, (error, stdout, stderr) => {
+            exec(`zip -r ${folderName}.zip ${folderName}/`, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`Error compressing folder: ${error}`);
                     return;
                 }
 
                 // Remove the folder after successful compression
-                exec(`rm -rf site-snapshots`, (rmError, rmStdout, rmStderr) => {
+                exec(`rm -rf ${folderName}`, (rmError, rmStdout, rmStderr) => {
                     if (rmError) {
                         console.error(`Error deleting folder: ${rmError}`);
                     } else {
