@@ -319,6 +319,18 @@ const {writeFile} = require("fs");
                     hrefs[linkText] = href;
                 }
 
+                try {
+                    await page.goto(hrefs['Developer Privacy Policy'], { timeout: 60000 });
+                    const privacy_policy_htmlContent = await page.content();
+                    let privacy_policy_app_path = pageTitle.replace(regex, '');
+                    privacyPolicyFilePath = file_path_prefix + `${currentDate}/privacy-policy-snapshots/${privacy_policy_app_path}_privacy_policy_${currentDate}.html`;
+                    await fspromise.writeFile(privacyPolicyFilePath, privacy_policy_htmlContent);
+                    privacyPolicyLoadedSuccessfully = true;
+                } catch (privacyPolicyError) {
+                    privacyPolicyLoadedSuccessfully = false;
+                    privacyPolicyFilePath = null;
+                }
+
                 // Create a JSON object for the current link
                 const item = {
                     appName: pageTitle,
@@ -334,27 +346,12 @@ const {writeFile} = require("fs");
                     developerDocumentation: hrefs['Developer Documentation'],
                     developerPrivacyPolicy: hrefs['Developer Privacy Policy'],
                     developerSupport: hrefs['Developer Support'],
-                    developerTermsOfUse: hrefs['Developer Terms of Use']
+                    developerTermsOfUse: hrefs['Developer Terms of Use'],
+                    privacyPolicyLoadedSuccessfully: privacyPolicyLoadedSuccessfully,
+                    privacyPolicyFilePath: privacyPolicyFilePath,
+                    siteSnapshotFilePath: filename,
+
                 };
-
-                await page.goto(hrefs['Developer Privacy Policy'], {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
-                // await page.waitForSelector('.css-legcjp', {timeout: 60000});
-
-                // Get the HTML content of the page
-                const privacy_policy_htmlContent = await page.content();
-                // const privacy_policy_pageTitle = await page.title();
-                await delay(10000);
-
-                // Replace non-alphanumeric characters with an empty string
-                let privacy_policy_app_path = pageTitle.replace(regex, '');
-
-                // Create a unique filename based on the current date and time
-                const privacy_policy_filename = file_path_prefix + `${currentDate}/privacy-policy-snapshots/${privacy_policy_app_path}_privacy_policy_${currentDate}.html`;
-
-                // uses fspromise to aysncronously write to the file
-                await fspromise.writeFile(privacy_policy_filename, privacy_policy_htmlContent);
-
-
 
                 lineNumber++;
 
