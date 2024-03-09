@@ -117,7 +117,8 @@ const {writeFile} = require("fs");
         const itemsArray = [];
 
 
-        for (const link of links) {
+        // allAppLinks directly from the file
+        for (const link of allAppLinks) {
             await processLink(link);
 
             const waitTime = 2;
@@ -398,7 +399,6 @@ const {writeFile} = require("fs");
                 console.log(`Folder compressed successfully: ${zipFilePath}`);
             });
         }
-
 
     });
 })();
