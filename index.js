@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const fspromise = require('fs').promises; // Use fs.promises for async file operations
 require('dotenv').config();
 const nodemailer = require('nodemailer');
-const { exec } = require('child_process');
+const {exec} = require('child_process');
 const path = require('path');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
@@ -107,298 +107,292 @@ const {writeFile} = require("fs");
     const outputFilePath = file_path_prefix + `${currentDate}/app-data/zoom_marketplace_${currentDate}.json`;
 
     // Read the links from the text file
-    fs.readFile(filePath, 'utf8', async (err, data) => {
+
+    const itemsArray = [];
+
+
+    // allAppLinks directly from the file
+    for (const link of allAppLinks) {
+        await processLink(link);
+
+        const waitTime = 2;
+        console.log("Starting " + waitTime + " second wait:");
+        for (let i = 1; i < (waitTime + 1); i++) {
+            await delay(1000);
+            process.stdout.write(i + " ");
+        }
+        console.log("\nCompleted waiting for " + waitTime + " seconds");
+    }
+
+
+    // Retry for failed links
+    console.log('Retrying for failed links...');
+    fs.appendFileSync(logsFilePath, 'Retrying for failed links...'); // Log the failure
+
+    const retryFailedLinks = [...linksFailedToLoad]; // Copy to prevent modification during iteration
+
+
+    linksFailedToLoad = []; // Reset for the second attempt
+
+    for (const link of retryFailedLinks) {
+        await processLink(link);
+    }
+
+    // Log the final failed links
+    if (linksFailedToLoad.length > 0) {
+        logContent += `Failed to load after retry:\n${linksFailedToLoad.join('\n')}\n`;
+    } else {
+        logContent += `\nAll links loaded successfully after retry!\n`;
+    }
+
+    // Write all items as a JSON array to the output JSON file
+    fs.writeFile(outputFilePath, JSON.stringify(itemsArray, null, 4), (err) => {
         if (err) {
-            console.error('Error reading the file:', err);
-            await browser.close();
-            return;
-        }
-        const links = data.trim().split('\n');
-        const itemsArray = [];
-
-
-        // allAppLinks directly from the file
-        for (const link of allAppLinks) {
-            await processLink(link);
-
-            const waitTime = 2;
-            console.log("Starting " + waitTime + " second wait:");
-            for (let i = 1; i < (waitTime + 1); i++) {
-                await delay(1000);
-                process.stdout.write(i + " ");
-            }
-            console.log("\nCompleted waiting for " + waitTime + " seconds");
-        }
-
-
-        // Retry for failed links
-        console.log('Retrying for failed links...');
-        fs.appendFileSync(logsFilePath, 'Retrying for failed links...'); // Log the failure
-
-        const retryFailedLinks = [...linksFailedToLoad]; // Copy to prevent modification during iteration
-
-
-        linksFailedToLoad = []; // Reset for the second attempt
-
-        for (const link of retryFailedLinks) {
-            await processLink(link);
-        }
-
-        // Log the final failed links
-        if (linksFailedToLoad.length > 0) {
-            logContent += `Failed to load after retry:\n${linksFailedToLoad.join('\n')}\n`;
+            console.error('Error writing the output file:', err);
         } else {
-            logContent += `\nAll links loaded successfully after retry!\n`;
+            console.log('Items have been written to', outputFilePath);
+            console.log('Error Count: ', errorCount)
+            const endTime = Date.now(); // Record the end time
+            const executionTime = (endTime - startTime) / 1000; // Calculate execution time in seconds
+            console.log('Program execution time:', executionTime, 'seconds');
         }
+    });
 
-        // Write all items as a JSON array to the output JSON file
-        fs.writeFile(outputFilePath, JSON.stringify(itemsArray, null, 4), (err) => {
-            if (err) {
-                console.error('Error writing the output file:', err);
-            } else {
-                console.log('Items have been written to', outputFilePath);
-                console.log('Error Count: ', errorCount)
-                const endTime = Date.now(); // Record the end time
-                const executionTime = (endTime - startTime) / 1000; // Calculate execution time in seconds
-                console.log('Program execution time:', executionTime, 'seconds');
-            }
-        });
+    // After processing the links, add the following code for logging
+    const executionTime = (Date.now() - startTime) / 1000;
 
-        // After processing the links, add the following code for logging
-        const executionTime = (Date.now() - startTime) / 1000;
+    // Write program execution information to the log file
+    logContent += `Program execution time: ${executionTime} seconds\n`;
+    logContent += `Total Number Apps in Marketplace Today: ${allAppLinks.length}\n`
+    logContent += `Total Number of Errors in Program Run: ${errorCount}\n`;
+    logContent += `Apps Links that didn't load on First Pass: ${retryFailedLinks.join(' ')}\n`;
+    logContent += `Total Number of Links that didn't load on second pass: ${linksFailedToLoad.length}\n`;
+    logContent += `Apps Links that didn't load on Second Pass: ${linksFailedToLoad.join(' ')}\n`;
+    logContent += `Total Number Apps Successfully Scraped: ${itemsArray.length}\n`
+    logContent += '===============================\n';
 
-        // Write program execution information to the log file
-        logContent += `Program execution time: ${executionTime} seconds\n`;
-        logContent += `Total Number Apps in Marketplace Today: ${allAppLinks.length}\n`
-        logContent += `Total Number of Errors in Program Run: ${errorCount}\n`;
-        logContent += `Apps Links that didn't load on First Pass: ${retryFailedLinks.join(' ')}\n`;
-        logContent += `Total Number of Links that didn't load on second pass: ${linksFailedToLoad.length}\n`;
-        logContent += `Apps Links that didn't load on Second Pass: ${linksFailedToLoad.join(' ')}\n`;
-        logContent += '===============================\n';
+    // write to logs to file
+    fs.appendFileSync(logsFilePath, logContent);
 
-        // write to logs to file
-        fs.appendFileSync(logsFilePath, logContent);
+    const transporter = nodemailer.createTransport({
+        service: 'gmail', auth: {
+            user: process.env.SENDER_EMAIL,
+            pass: process.env.PASSWORD
+        }
+    });
 
-        const transporter = nodemailer.createTransport({
-            service: 'gmail', auth: {
-                user: process.env.SENDER_EMAIL,
-                pass: process.env.PASSWORD
-            }
-        });
+    const mailOptions = {
+        from: process.env.SENDER_EMAIL,
+        to: process.env.RECIPIENT_EMAIL,
+        subject: `Log Content ${currentDate}`,
+        text: logContent
+    };
 
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
-            to: process.env.RECIPIENT_EMAIL,
-            subject: `Log Content ${currentDate}`,
-            text: logContent
-        };
+    await transporter.sendMail(mailOptions, function (error) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent!\n');
+        }
+    });
 
-        await transporter.sendMail(mailOptions, function (error) {
-            if (error) {
-                console.log(error);
-            } else {
-                console.log('Email sent!\n');
-            }
-        });
+    async function processLink(url) {
+        try {
+            console.log("Loading Page...");
+            // Set the navigation timeout directly in the page.goto options
+            await page.goto(url, {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
+            await page.waitForSelector('.css-legcjp', {timeout: 60000});
 
-        async function processLink(url) {
-            try {
-                console.log("Loading Page...");
-                // Set the navigation timeout directly in the page.goto options
-                await page.goto(url, {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
-                await page.waitForSelector('.css-legcjp', {timeout: 60000});
+            // Get the HTML content of the page
+            const htmlContent = await page.content();
+            const pageTitle = await page.title();
 
-                // Get the HTML content of the page
-                const htmlContent = await page.content();
-                const pageTitle = await page.title();
+            let regex = /[^a-zA-Z0-9]/g;
 
-                let regex = /[^a-zA-Z0-9]/g;
+            // Replace non-alphanumeric characters with an empty string
+            let app_path = pageTitle.replace(regex, '');
 
-                // Replace non-alphanumeric characters with an empty string
-                let app_path = pageTitle.replace(regex, '');
+            // Create a unique filename based on the current date and time
+            const filename = file_path_prefix + `${currentDate}/site-snapshots/${app_path}_${currentDate}.html`;
 
-                // Create a unique filename based on the current date and time
-                const filename = file_path_prefix + `${currentDate}/site-snapshots/${app_path}_${currentDate}.html`;
+            // uses fspromise to aysncronously write to the file
+            await fspromise.writeFile(filename, htmlContent);
 
-                // uses fspromise to aysncronously write to the file
-                await fspromise.writeFile(filename, htmlContent);
+            console.log("Page Loaded!");
 
-                console.log("Page Loaded!");
+            const user_requirements = await page.$$eval('.css-16lkeer', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
 
-                const user_requirements = await page.$$eval('.css-16lkeer', (elements) => {
-                    return elements.map((element) => element.textContent);
-                });
+            const scopes = await page.$$eval('.css-cmr47g', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
 
-                const scopes = await page.$$eval('.css-cmr47g', (elements) => {
-                    return elements.map((element) => element.textContent);
-                });
+            const developer = await page.$eval('.css-dpgp0', (element) => {
+                return element.textContent.substring(3);
+            });
 
-                const developer = await page.$eval('.css-dpgp0', (element) => {
-                    return element.textContent.substring(3);
-                });
+            const categories = await page.$$eval('.css-1czv3e2', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
 
-                const categories = await page.$$eval('.css-1czv3e2', (elements) => {
-                    return elements.map((element) => element.textContent);
-                });
+            const description = await page.$eval('.css-1gpdksz', (element) => {
+                return element.textContent;
+            });
 
-                const description = await page.$eval('.css-1gpdksz', (element) => {
-                    return element.textContent;
-                });
+            const worksInElement = await page.$('.css-1s3wv3b');
+            const worksInText = worksInElement ? await worksInElement.evaluate(node => node.textContent.trim()) : '';
+            const worksInArray = worksInText ? worksInText.split(',').map((item, index) => (index === 0 ? item.replace('Works In: ', '') : item)) : [];
 
-                const worksInElement = await page.$('.css-1s3wv3b');
-                const worksInText = worksInElement ? await worksInElement.evaluate(node => node.textContent.trim()) : '';
-                const worksInArray = worksInText ? worksInText.split(',').map((item, index) => (index === 0 ? item.replace('Works In: ', '') : item)) : [];
-
-                // what is this?
-                await page.$$eval('.MuiLink-root', (elements) => {
-                    return elements.map((element) => element.textContent);
-                });
+            // what is this?
+            await page.$$eval('.MuiLink-root', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
 
 
-                const viewInformationElements = await page.evaluate(() => {
-                    const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
-                    // Define a recursive function to check ancestors for the inner text
-                    const hasParentWithText = (element, text) => {
-                        if (!element || element.textContent.includes("App can manage information")) {
-                            return false;
-                        }
+            const viewInformationElements = await page.evaluate(() => {
+                const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
+                // Define a recursive function to check ancestors for the inner text
+                const hasParentWithText = (element, text) => {
+                    if (!element || element.textContent.includes("App can manage information")) {
+                        return false;
+                    }
 
-                        if (element.textContent.includes(text)) {
-                            return true;
-                        }
+                    if (element.textContent.includes(text)) {
+                        return true;
+                    }
 
-                        return hasParentWithText(element.parentElement, text);
-                    };
-
-                    return elements
-                        .filter(element => {
-                            // Check if any ancestor up to the root contains the inner text
-                            return hasParentWithText(element.parentElement, 'App can view information');
-                        })
-                        .map(element => element.textContent.trim());
-                });
-
-                const manageInformationElements = await page.evaluate(() => {
-                    const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
-
-                    // Define a recursive function to check ancestors for the inner text
-                    const hasParentWithText = (element, text) => {
-                        if (!element || element.textContent.includes("App can view information")) {
-                            return false;
-                        }
-
-                        if (element.textContent.includes(text)) {
-                            return true;
-                        }
-
-                        return hasParentWithText(element.parentElement, text);
-                    };
-
-                    return elements
-                        .filter(element => {
-                            // Check if any ancestor up to the root contains the inner text
-                            return hasParentWithText(element.parentElement, 'App can manage information');
-                        })
-                        .map(element => element.textContent.trim());
-                });
-
-                const linksToFind = ['Developer Documentation', 'Developer Privacy Policy', 'Developer Support', 'Developer Terms of Use',];
-
-                const hrefs = {};
-
-                for (const linkText of linksToFind) {
-                    const href = await page.evaluate((text) => {
-                        const links = document.querySelectorAll('.MuiLink-root');
-                        for (const link of links) {
-                            if (link.textContent === text) {
-                                return link.getAttribute('href');
-                            }
-                        }
-                        return null;
-                    }, linkText);
-
-                    hrefs[linkText] = href;
-                }
-
-                try {
-                    await page.goto(hrefs['Developer Privacy Policy'], { timeout: 60000 });
-                    const privacy_policy_htmlContent = await page.content();
-                    let privacy_policy_app_path = pageTitle.replace(regex, '');
-                    privacyPolicyFilePath = file_path_prefix + `${currentDate}/privacy-policy-snapshots/${privacy_policy_app_path}_privacy_policy_${currentDate}.html`;
-                    await fspromise.writeFile(privacyPolicyFilePath, privacy_policy_htmlContent);
-                    privacyPolicyLoadedSuccessfully = true;
-                } catch (privacyPolicyError) {
-                    privacyPolicyLoadedSuccessfully = false;
-                    privacyPolicyFilePath = null;
-                }
-
-                // Create a JSON object for the current link
-                const item = {
-                    appName: pageTitle,
-                    dev: developer,
-                    appUrl: url,
-                    categories: categories,
-                    description: description,
-                    worksIn: worksInArray,
-                    scopes: scopes,
-                    userRequirements: user_requirements,
-                    viewPermissions: viewInformationElements,
-                    managePermissions: manageInformationElements,
-                    developerDocumentation: hrefs['Developer Documentation'],
-                    developerPrivacyPolicy: hrefs['Developer Privacy Policy'],
-                    developerSupport: hrefs['Developer Support'],
-                    developerTermsOfUse: hrefs['Developer Terms of Use'],
-                    privacyPolicyLoadedSuccessfully: privacyPolicyLoadedSuccessfully,
-                    privacyPolicyFilePath: privacyPolicyFilePath,
-                    siteSnapshotFilePath: filename,
-
+                    return hasParentWithText(element.parentElement, text);
                 };
 
-                lineNumber++;
-
-                console.log(`Line ${lineNumber} - Items:`, item, 'Error Count: ', errorCount);
-
-                itemsArray.push(item);
-            } catch (error) {
-                const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
-                console.error(`Timeout waiting for URL: ${url}`);
-                errorCount++;
-                linksFailedToLoad.push(url); // Add to failed links array
-                fs.appendFileSync(logsFilePath, `Failed to app page: ${url}\n`); // Log the failure
-            }
-        }
-
-        // Close the browser at the end of program execution
-        await browser.close();
-        process.chdir(`${file_path_prefix}${currentDate}/`);
-
-        compressFolder('site-snapshots');
-        compressFolder('privacy-policy-snapshots')
-
-        function compressFolder(folderName) {
-            // const folderName = 'site-snapshots';
-            const zipFilePath = path.join(file_path_prefix, `${currentDate}/`, `${folderName}/`);
-
-
-            // Zip the folder
-            exec(`zip -r ${folderName}.zip ${folderName}/`, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Error compressing folder: ${error}`);
-                    return;
-                }
-
-                // Remove the folder after successful compression
-                exec(`rm -rf ${folderName}`, (rmError, rmStdout, rmStderr) => {
-                    if (rmError) {
-                        console.error(`Error deleting folder: ${rmError}`);
-                    } else {
-                        console.log(`Folder deleted successfully: ${zipFilePath}`);
-                    }
-                });
-
-                console.log(`Folder compressed successfully: ${zipFilePath}`);
+                return elements
+                    .filter(element => {
+                        // Check if any ancestor up to the root contains the inner text
+                        return hasParentWithText(element.parentElement, 'App can view information');
+                    })
+                    .map(element => element.textContent.trim());
             });
-        }
 
-    });
+            const manageInformationElements = await page.evaluate(() => {
+                const elements = Array.from(document.querySelectorAll('.css-d0uhtl'));
+
+                // Define a recursive function to check ancestors for the inner text
+                const hasParentWithText = (element, text) => {
+                    if (!element || element.textContent.includes("App can view information")) {
+                        return false;
+                    }
+
+                    if (element.textContent.includes(text)) {
+                        return true;
+                    }
+
+                    return hasParentWithText(element.parentElement, text);
+                };
+
+                return elements
+                    .filter(element => {
+                        // Check if any ancestor up to the root contains the inner text
+                        return hasParentWithText(element.parentElement, 'App can manage information');
+                    })
+                    .map(element => element.textContent.trim());
+            });
+
+            const linksToFind = ['Developer Documentation', 'Developer Privacy Policy', 'Developer Support', 'Developer Terms of Use',];
+
+            const hrefs = {};
+
+            for (const linkText of linksToFind) {
+                const href = await page.evaluate((text) => {
+                    const links = document.querySelectorAll('.MuiLink-root');
+                    for (const link of links) {
+                        if (link.textContent === text) {
+                            return link.getAttribute('href');
+                        }
+                    }
+                    return null;
+                }, linkText);
+
+                hrefs[linkText] = href;
+            }
+
+            try {
+                await page.goto(hrefs['Developer Privacy Policy'], {timeout: 60000});
+                const privacy_policy_htmlContent = await page.content();
+                let privacy_policy_app_path = pageTitle.replace(regex, '');
+                privacyPolicyFilePath = file_path_prefix + `${currentDate}/privacy-policy-snapshots/${privacy_policy_app_path}_privacy_policy_${currentDate}.html`;
+                await fspromise.writeFile(privacyPolicyFilePath, privacy_policy_htmlContent);
+                privacyPolicyLoadedSuccessfully = true;
+            } catch (privacyPolicyError) {
+                privacyPolicyLoadedSuccessfully = false;
+                privacyPolicyFilePath = null;
+            }
+
+            // Create a JSON object for the current link
+            const item = {
+                appName: pageTitle,
+                dev: developer,
+                appUrl: url,
+                categories: categories,
+                description: description,
+                worksIn: worksInArray,
+                scopes: scopes,
+                userRequirements: user_requirements,
+                viewPermissions: viewInformationElements,
+                managePermissions: manageInformationElements,
+                developerDocumentation: hrefs['Developer Documentation'],
+                developerPrivacyPolicy: hrefs['Developer Privacy Policy'],
+                developerSupport: hrefs['Developer Support'],
+                developerTermsOfUse: hrefs['Developer Terms of Use'],
+                privacyPolicyLoadedSuccessfully: privacyPolicyLoadedSuccessfully,
+                privacyPolicyFilePath: privacyPolicyFilePath,
+                siteSnapshotFilePath: filename,
+
+            };
+
+            lineNumber++;
+
+            console.log(`Line ${lineNumber} - Items:`, item, 'Error Count: ', errorCount);
+
+            itemsArray.push(item);
+        } catch (error) {
+            const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
+            console.error(`Timeout waiting for URL: ${url}`);
+            errorCount++;
+            linksFailedToLoad.push(url); // Add to failed links array
+            fs.appendFileSync(logsFilePath, `Failed to app page: ${url}\n`); // Log the failure
+        }
+    }
+
+    // Close the browser at the end of program execution
+    await browser.close();
+    process.chdir(`${file_path_prefix}${currentDate}/`);
+
+    compressFolder('site-snapshots');
+    compressFolder('privacy-policy-snapshots')
+
+    function compressFolder(folderName) {
+        // const folderName = 'site-snapshots';
+        const zipFilePath = path.join(file_path_prefix, `${currentDate}/`, `${folderName}/`);
+
+
+        // Zip the folder
+        exec(`zip -r ${folderName}.zip ${folderName}/`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error compressing folder: ${error}`);
+                return;
+            }
+
+            // Remove the folder after successful compression
+            exec(`rm -rf ${folderName}`, (rmError, rmStdout, rmStderr) => {
+                if (rmError) {
+                    console.error(`Error deleting folder: ${rmError}`);
+                } else {
+                    console.log(`Folder deleted successfully: ${zipFilePath}`);
+                }
+            });
+
+            console.log(`Folder compressed successfully: ${zipFilePath}`);
+        });
+    }
+
 })();
