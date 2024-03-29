@@ -21,8 +21,8 @@ const {writeFile} = require("fs");
     await page.setDefaultNavigationTimeout(0);
     let logContent = "";
 
-    let file_path_prefix = "/mnt/data/projects/zoom-app-privacy-data/data/"
-    // let file_path_prefix = "data/"
+    // let file_path_prefix = "/mnt/data/projects/zoom-app-privacy-data/data/"
+    let file_path_prefix = process.env.DATA_PATH;
 
     // Check if the directory exists, and create it if it doesn't
     if (!fs.existsSync(file_path_prefix + `${currentDate}/links/`)) {
@@ -52,7 +52,7 @@ const {writeFile} = require("fs");
 
     const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
 
-    for (let i = 1; i < 100; i++) {
+    for (let i = 1; i < process.env.PAGE_LOAD; i++) {
         try {
             // Navigate to the website
             await page.goto(`${zoomBaseURL}/apps?page=${i}`, {timeout: 60000});
@@ -201,7 +201,7 @@ const {writeFile} = require("fs");
             console.log("Loading Page...");
             // Set the navigation timeout directly in the page.goto options
             await page.goto(url, {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
-            await page.waitForSelector('.css-legcjp', {timeout: 60000});
+            await page.waitForSelector('.css-1lc23xd', {timeout: 60000});
 
             // Get the HTML content of the page
             const htmlContent = await page.content();
@@ -228,11 +228,29 @@ const {writeFile} = require("fs");
                 return elements.map((element) => element.textContent);
             });
 
-            const developer = await page.$eval('.css-dpgp0', (element) => {
-                return element.textContent.substring(3);
+            const developer = await page.evaluate(async () => {
+                const element = document.querySelector('.css-1njwgvi');
+                if (!element) {
+                    const altElement = document.querySelector('.css-askx6r');
+                    if (altElement) {
+                        return altElement.textContent;
+                    } else {
+                        return null;
+                    }
+                } else {
+                    return element.textContent;
+                }
             });
 
-            const categories = await page.$$eval('.css-1czv3e2', (elements) => {
+            const appName = await page.$eval('.css-1lc23xd', (element) => {
+                return element.textContent;
+            });
+
+            const categories = await page.$$eval('.css-1vuggv1', (elements) => {
+                return elements.map((element) => element.textContent);
+            });
+
+            const worksInArray = await page.$$eval('.css-1vuggv1', (elements) => {
                 return elements.map((element) => element.textContent);
             });
 
@@ -240,9 +258,9 @@ const {writeFile} = require("fs");
                 return element.textContent;
             });
 
-            const worksInElement = await page.$('.css-1s3wv3b');
-            const worksInText = worksInElement ? await worksInElement.evaluate(node => node.textContent.trim()) : '';
-            const worksInArray = worksInText ? worksInText.split(',').map((item, index) => (index === 0 ? item.replace('Works In: ', '') : item)) : [];
+            // const worksInElement = await page.$('.css-1s3wv3b');
+            // const worksInText = worksInElement ? await worksInElement.evaluate(node => node.textContent.trim()) : '';
+            // const worksInArray = worksInText ? worksInText.split(',').map((item, index) => (index === 0 ? item.replace('Works In: ', '') : item)) : [];
 
             // what is this?
             await page.$$eval('.MuiLink-root', (elements) => {
@@ -297,26 +315,27 @@ const {writeFile} = require("fs");
                     .map(element => element.textContent.trim());
             });
 
-            const linksToFind = ['Developer Documentation', 'Developer Privacy Policy', 'Developer Support', 'Developer Terms of Use',];
+            const linksToFind = ['Documentation', 'Privacy Policy', 'Support', 'Terms of Use'];
 
             const hrefs = {};
 
             for (const linkText of linksToFind) {
-                const href = await page.evaluate((text) => {
-                    const links = document.querySelectorAll('.MuiLink-root');
+                const [cur_link] = await Promise.all([page.evaluate((text) => {
+                    const links = document.querySelectorAll('.css-hmbbrx');
                     for (const link of links) {
                         if (link.textContent === text) {
                             return link.getAttribute('href');
                         }
                     }
                     return null;
-                }, linkText);
+                }, linkText)]);
 
-                hrefs[linkText] = href;
+                hrefs[linkText] = cur_link;
             }
 
+
             try {
-                await page.goto(hrefs['Developer Privacy Policy'], {timeout: 60000});
+                await page.goto(hrefs['Privacy Policy'], {timeout: 60000});
                 const privacy_policy_htmlContent = await page.content();
                 let privacy_policy_app_path = pageTitle.replace(regex, '');
                 privacyPolicyFilePath = file_path_prefix + `${currentDate}/privacy-policy-snapshots/${privacy_policy_app_path}_privacy_policy_${currentDate}.html`;
@@ -329,7 +348,7 @@ const {writeFile} = require("fs");
 
             // Create a JSON object for the current link
             const item = {
-                appName: pageTitle,
+                appName: appName,
                 dev: developer,
                 appUrl: url,
                 categories: categories,
@@ -339,10 +358,10 @@ const {writeFile} = require("fs");
                 userRequirements: user_requirements,
                 viewPermissions: viewInformationElements,
                 managePermissions: manageInformationElements,
-                developerDocumentation: hrefs['Developer Documentation'],
-                developerPrivacyPolicy: hrefs['Developer Privacy Policy'],
-                developerSupport: hrefs['Developer Support'],
-                developerTermsOfUse: hrefs['Developer Terms of Use'],
+                developerDocumentation: hrefs['Documentation'],
+                developerPrivacyPolicy: hrefs['Privacy Policy'],
+                developerSupport: hrefs['Support'],
+                developerTermsOfUse: hrefs['Terms of Use'],
                 privacyPolicyLoadedSuccessfully: privacyPolicyLoadedSuccessfully,
                 privacyPolicyFilePath: privacyPolicyFilePath,
                 siteSnapshotFilePath: filename,
@@ -357,6 +376,7 @@ const {writeFile} = require("fs");
         } catch (error) {
             const logsFilePath = file_path_prefix + `${currentDate}/logs/logs.txt`;
             console.error(`Timeout waiting for URL: ${url}`);
+            console.error(`Error: ${error}`);
             errorCount++;
             linksFailedToLoad.push(url); // Add to failed links array
             fs.appendFileSync(logsFilePath, `Failed to app page: ${url}\n`); // Log the failure
