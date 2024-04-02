@@ -201,7 +201,7 @@ const {writeFile} = require("fs");
             console.log("Loading Page...");
             // Set the navigation timeout directly in the page.goto options
             await page.goto(url, {timeout: 60000}); // Increase the timeout value to 60000ms (60 seconds)
-            await page.waitForSelector('.css-1lc23xd', {timeout: 60000});
+            await page.waitForSelector('.css-i3jcei', {timeout: 60000});
 
             // Get the HTML content of the page
             const htmlContent = await page.content();
@@ -242,9 +242,19 @@ const {writeFile} = require("fs");
                 }
             });
 
-            const appName = await page.$eval('.css-1lc23xd', (element) => {
-                return element.textContent;
-            });
+            let appName = "";
+            try {
+                appName = await page.$eval('.css-1lc23xd', (element) => {
+                    return element.textContent;
+                });
+            } catch (e) {
+                appName = await page.$eval('.css-1gf10il', (element) => {
+                    return element.textContent;
+                });
+            }
+            // const appName = await page.$eval('.css-1lc23xd', (element) => {
+            //     return element.textContent;
+            // });
 
             const categories = await page.$$eval('.css-1vuggv1', (elements) => {
                 return elements.map((element) => element.textContent);
