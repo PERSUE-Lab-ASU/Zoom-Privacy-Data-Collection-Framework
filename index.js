@@ -115,7 +115,7 @@ const {writeFile} = require("fs");
     for (const link of allAppLinks) {
         await processLink(link);
 
-        const waitTime = 2;
+        const waitTime = 10;
         console.log("Starting " + waitTime + " second wait:");
         for (let i = 1; i < (waitTime + 1); i++) {
             await delay(1000);
@@ -224,23 +224,28 @@ const {writeFile} = require("fs");
                 return elements.map((element) => element.textContent);
             });
 
-            const scopes = await page.$$eval('.css-cmr47g', (elements) => {
-                return elements.map((element) => element.textContent);
+            const scopes = await page.$$eval('.MuiBox-root.css-10khgmf', (elements) => {
+                return elements.map((element) => {
+                    const scopeName = element.querySelector('.MuiTypography-root.css-rpyf5q')?.textContent || '';
+                    const scopeValue = element.querySelector('.MuiTypography-root.css-vhnn71')?.textContent || '';
+                    return { name: scopeName, value: scopeValue };
+                });
             });
 
-            const developer = await page.evaluate(async () => {
-                const element = document.querySelector('.css-1njwgvi');
-                if (!element) {
-                    const altElement = document.querySelector('.css-askx6r');
-                    if (altElement) {
-                        return altElement.textContent;
-                    } else {
-                        return null;
-                    }
-                } else {
+            // Update the developer extraction logic to check both formats
+            let developer = '';
+
+            // First attempt to get the developer from the initial format
+            try {
+                developer = await page.$eval('.MuiTypography-root.MuiTypography-body2.css-1t6gqoh', (element) => {
                     return element.textContent;
-                }
-            });
+                });
+            } catch (e) {
+                // If the first format fails, try the alternative format
+                developer = await page.$eval('.MuiBox-root.css-0 a', (element) => {
+                    return element.textContent;
+                });
+            }
 
             let appName = "";
             try {
@@ -331,7 +336,7 @@ const {writeFile} = require("fs");
 
             for (const linkText of linksToFind) {
                 const [cur_link] = await Promise.all([page.evaluate((text) => {
-                    const links = document.querySelectorAll('.css-hmbbrx');
+                    const links = document.querySelectorAll('.MuiLink-root');
                     for (const link of links) {
                         if (link.textContent === text) {
                             return link.getAttribute('href');
