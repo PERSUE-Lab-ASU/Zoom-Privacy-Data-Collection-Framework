@@ -7,32 +7,34 @@ This project is an automated web scraper for the [Zoom App Marketplace](https://
 ## System Overview
 
 ```
-+----------------------+
-|    Start Script      |
-+----------------------+
-| - Initialize modules |
-| - Create date folder |
-| - Create folders:    |
-|   app-data, links,   |
-|   logs, site-snapshots|
-+----------------------+
-          |
-          v
-+---------------------------+
-|   Scrape Marketplace      |
-+---------------------------+
-| - Loop through directory  |
-|   pages (100 pages)       |
-| - Scrape direct links to  |
-|   apps (~2500 apps)       |
-| - Write links to links.txt|
-| - Log failed directory    |
-|   pages                   |
-+---------------------------+
-          |
-          v
 +-------------------------------+
-| Scrape Apps - First Pass      |
+|         Start Script          |
++-------------------------------+
+| - Initialize modules          |
+| - Create date folder          |
+| - Create folders:             |
+|   app-data                    |
+|   links                       |
+|   logs                        |
+|   site-snapshots              |
+|   privacy-policy-snapshots    |
++-------------------------------+
+           |
+           v
++-------------------------------+
+|      Scrape Marketplace       |
++-------------------------------+
+| - Loop through directory      |
+|   pages (100 pages)           |
+| - Scrape direct links to apps |
+|   (~2500 apps)                |
+| - Write links to links.txt    |
+| - Log failed directory pages  |
++-------------------------------+
+           |
+           v
++-------------------------------+
+|   Scrape Apps - First Pass    |
 +-------------------------------+
 | - Read links.txt (2500 apps)  |
 | - Scrape app webpage          |
@@ -41,18 +43,18 @@ This project is an automated web scraper for the [Zoom App Marketplace](https://
 | - Append to app-data JSON     |
 | - Store app page HTML         |
 +-------------------------------+
-          |
-          v
+           |
+           v
 +-------------------------------+
-| Scrape Apps - Second Pass     |
+|  Scrape Apps - Second Pass    |
 +-------------------------------+
 | - Retry failed apps           |
 | - Log apps that fail again    |
 +-------------------------------+
-          |
-          v
+           |
+           v
 +-------------------------------+
-| Log Execution Details         |
+|   Log Execution Details       |
 +-------------------------------+
 | - Log to logs.txt:            |
 |   * Number of apps            |
@@ -60,10 +62,10 @@ This project is an automated web scraper for the [Zoom App Marketplace](https://
 |   * Links that didn't load    |
 |   * Execution time            |
 +-------------------------------+
-          |
-          v
+           |
+           v
 +-------------------------------+
-| Send Email with Details       |
+|  Send Email with Details      |
 +-------------------------------+
 | - Create email object         |
 | - Get credentials             |
@@ -89,18 +91,42 @@ This project is an automated web scraper for the [Zoom App Marketplace](https://
 
 ```
 data/
-  └── YYYY-MM-DD/
-      ├── app-data/
-      │   └── zoom_marketplace_YYYY-MM-DD.json
-      ├── links/
-      │   └── links.txt
-      ├── logs/
-      │   └── logs.txt
-      ├── site-snapshots/
-      │   └── <appname>_YYYY-MM-DD.html
-      └── privacy-policy-snapshots/
-          └── <appname>_privacy_policy_YYYY-MM-DD.html
+  └── YYYY-MM-DD/                # Folder for each run date
+      └── <appname>/             # Folder for each app scraped on that date
+          ├── app-data/
+          │   └── zoom_marketplace_YYYY-MM-DD.json
+          ├── links/
+          │   └── links.txt
+          ├── logs/
+          │   └── logs.txt
+          ├── site-snapshots/
+          │   └── <appname>_YYYY-MM-DD.html
+          └── privacy-policy-snapshots/
+              └── <appname>_privacy_policy_YYYY-MM-DD.html
 ```
+
+**How data is organized:**
+- A folder is created for each date the script is run (e.g., `2024-06-01`).
+- Inside each date folder, there is a folder for each app scraped on that date (named after the app).
+- Within each app folder, the five corresponding folders are created:
+  - `app-data/`, `links/`, `logs/`, `site-snapshots/`, and `privacy-policy-snapshots/`.
+
+### Folder Contents Explained
+
+- **app-data/**  
+  Contains the main JSON file (`zoom_marketplace_YYYY-MM-DD.json`) with all the structured data collected for each app, including permissions, links, and metadata.
+
+- **links/**  
+  Stores `links.txt`, a plain text file listing all direct links to app pages scraped from the Zoom Marketplace.
+
+- **logs/**  
+  Contains `logs.txt`, which records execution details, errors, failed links, and summary statistics for each run.
+
+- **site-snapshots/**  
+  Contains HTML files for each app's main page as it appeared during scraping. Each file is named after the app and date.
+
+- **privacy-policy-snapshots/**  
+  Contains HTML files for each app's privacy policy page, if available. Each file is named after the app and date.
 
 ---
 
@@ -124,7 +150,7 @@ npm install
 Create a `.env` file in the root directory:
 
 ```
-DATA_PATH=/absolute/path/to/data/
+DATA_PATH=/absolute/path/to/data/storage/location
 PAGE_LOAD=100
 SENDER_EMAIL=your_email@gmail.com
 PASSWORD=your_email_password_or_app_password
@@ -158,15 +184,6 @@ pm2 start index.js --name zoom_marketplace_timed --cron "0 0 * * 0"
 - **Logs:** Execution summary, errors, and failed links.
 - **Email Report:** Summary sent to configured recipient.
 
----
-
-## Customization
-
-- **Add/Remove Data Fields:** Edit the `processLink` function in `index.js` to change what is scraped.
-- **Change Email Logic:** Update the nodemailer section for different providers or formats.
-- **Adjust Scheduling:** Modify the cron syntax in `weekly_run_script.sh` as needed.
-
----
 
 ## Troubleshooting
 
