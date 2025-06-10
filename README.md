@@ -8,23 +8,33 @@ This project is an automated web scraper for the [Zoom App Marketplace](https://
 
 ```mermaid
 flowchart TD
+    %% Start Script
     A1[Initialize modules/browser/page] --> A2[Create Current Date Folder]
-    A2 --> A3[Create 5 Folders]
-    A3 --> B1[Loop through directory pages]
-    B1 --> B2[Scrape direct links to apps]
-    B2 --> B3[Write links to links.txt]
-    B3 --> B4[Log directory pages that failed]
-    B2 --> C1[Read links.txt and scrape app webpages]
-    C1 --> C2[Parse webpage to collect privacy data]
+    A2 --> A3[Create 4 Folders: app-data, links, logs, site-snapshots]
+    A3 --> B1
+
+    %% Scrape Marketplace
+    B1[Loop through directory pages (100 pages)] --> B2[Scrape direct links to apps (~2500 apps)]
+    B2 --> B3[Write direct app links to links.txt]
+    B3 --> B4[Log directory pages that failed to load]
+    B4 --> C1
+
+    %% Scrape Apps - First Pass
+    C1[Read links.txt (2500 apps) and scrape app webpage] --> C2[Parse webpage to collect privacy data]
     C2 --> C3[Build JSON object with app details]
-    C3 --> C4[Append JSON to app-data]
-    C3 --> C5[Store app page HTML]
-    C4 --> D1[Run scraping on failed apps]
-    D1 --> D2[Log apps that fail to load second pass]
-    D2 --> E1[Log to logs.txt]
-    E1 --> E2[Apps in Marketplace, Errors, Failed Links, Execution Time]
-    E2 --> F1[Create email object, get credentials]
-    F1 --> F2[Send email with logs]
+    C3 --> C4[Append JSON to app-data/zoom_marketplace.json]
+    C4 --> C5[Store app page HTML to site-snapshots/]
+    C5 --> D1
+
+    %% Scrape Apps - Second Pass
+    D1[Run scraping process on apps that failed to load on first pass] --> D2[Log apps that fail to load second pass]
+    D2 --> E1
+
+    %% Log Execution Details
+    E1[Log execution details to logs.txt:\n- Number of apps in marketplace\n- Errors on first/second pass\n- Links that didn't load\n- Program execution time] --> F1
+
+    %% Send Email with Details
+    F1[Create email object, get credentials] --> F2[Send email with logs]
 ```
 
 ---
