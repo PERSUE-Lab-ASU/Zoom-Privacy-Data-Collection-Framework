@@ -2,6 +2,8 @@
 
 This project is an automated web scraper for the [Zoom App Marketplace](https://marketplace.zoom.us/), designed to collect privacy-related data from all listed apps. It extracts app permissions, privacy policies, and other metadata, logs execution details, and emails a summary report.
 
+The data collected through this framework was used in the paper "Who's Watching You Zoom? Investigating Privacy of Third-Party Zoom Apps". The processed data from this study can be accessed at [PERSUE-Lab-ASU/Zoom-Privacy-Data-Poligraph-Cleaned](https://github.com/PERSUE-Lab-ASU/Zoom-Privacy-Data-Poligraph-Cleaned).
+
 ---
 
 ## System Overview
@@ -132,20 +134,24 @@ data/
 
 ## Setup & Usage
 
-### 1. Clone the Repository
+### 1. Install Node.js
+
+We recommend using [nvm](https://github.com/nvm-sh/nvm) to install and manage Node.js versions. The project has been tested with Node.js LTS version 20.10.0.
+
+### 2. Clone the Repository
 
 ```bash
 git clone <repo-url>
 cd Zoom-Privacy-Data-Collection-Framework
 ```
 
-### 2. Install Dependencies
+### 3. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
+### 4. Configure Environment Variables
 
 Create a `.env` file in the root directory:
 
@@ -159,15 +165,15 @@ RECIPIENT_EMAIL=recipient_email@gmail.com
 
 - `DATA_PATH`: Where to store scraped data (must end with `/`).
 - `PAGE_LOAD`: Number of marketplace pages to scrape (default: 100).
-- Email credentials for sending logs.
+- Email credentials for sending logs. For Gmail, you'll need to set up an app password. Follow the instructions at [Nodemailer Gmail Setup](https://nodemailer.com/usage/using-gmail) to generate the required password.
 
-### 4. Run the Scraper
+### 5. Run the Scraper
 
 ```bash
 node index.js
 ```
 
-### 5. Schedule with PM2 (Optional)
+### 6. Schedule with PM2 (Optional)
 
 To run weekly (as in `weekly_run_script.sh`):
 
