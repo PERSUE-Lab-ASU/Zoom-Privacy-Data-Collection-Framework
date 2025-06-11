@@ -18,7 +18,7 @@ The artifact requires Node.js to be installed. It has been tested and works with
 For email functionality, you'll need to set up an app password for Gmail. Follow the instructions at [Nodemailer Gmail Setup](https://nodemailer.com/usage/using-gmail) to generate the required password.
 
 ### Accessibility (All badges)
-The artifact can be accessed by cloning this GitHub repository.
+The artifact can be accessed by cloning this GitHub repository. The commit ID to be evaluated is b93632b.
 
 
 
